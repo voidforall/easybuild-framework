@@ -558,6 +558,22 @@ class Toolchain(object):
 
         return deps
 
+    def _set_env_vars_external_module(self, dependencies):
+        """Set $EBROOT* and/or $EBVERSION* environment variables that can be set for external modules. Used for both normal dependencies anddirect dependencies of the toolchain.
+        """
+        for dep in [d for d in dependencies if d['external_module']]:
+            mod_name = dep['full_mod_name']
+            metadata = dep['external_module_metadata']
+            self.log.debug("Metadata for external module %s: %s", mod_name, metadata)
+
+            names = metadata.get('name', [])
+            versions = metadata.get('version', [None] * len(names))
+            self.log.debug("Defining $EB* environment variables for external module %s using names %s, versions %s",
+                           mod_name, names, versions)
+
+            for name, version in zip(names, versions):
+                self._simulated_load_dependency_module(name, version, metadata, verbose=True)
+
     def add_dependencies(self, dependencies):
         """
         [DEPRECATED] Verify if the given dependencies exist, and return them.
@@ -647,6 +663,9 @@ class Toolchain(object):
 
         # append toolchain module to list of modules
         self.modules.append(tc_mod)
+        
+        # set environment variables for direct dependencies of the toolchain
+        self._set_env_vars_external_module(self.tcdeps)
 
     def _load_dependencies_modules(self, silent=False):
         """Load modules for dependencies, and handle special cases like external modules."""
@@ -695,18 +714,7 @@ class Toolchain(object):
         self.modules.extend(dep_mods)
 
         # define $EBROOT* and $EBVERSION* for external modules, if metadata is available
-        for dep in [d for d in self.dependencies if d['external_module']]:
-            mod_name = dep['full_mod_name']
-            metadata = dep['external_module_metadata']
-            self.log.debug("Metadata for external module %s: %s", mod_name, metadata)
-
-            names = metadata.get('name', [])
-            versions = metadata.get('version', [None] * len(names))
-            self.log.debug("Defining $EB* environment variables for external module %s using names %s, versions %s",
-                           mod_name, names, versions)
-
-            for name, version in zip(names, versions):
-                self._simulated_load_dependency_module(name, version, metadata, verbose=True)
+        self._set_env_vars_external_module(self.dependencies)
 
     def _load_modules(self, silent=False):
         """Load modules for toolchain and dependencies."""
