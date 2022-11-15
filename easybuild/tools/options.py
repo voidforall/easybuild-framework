@@ -1778,7 +1778,7 @@ def parse_external_modules_metadata(cfgs):
         except ConfigObjError as err:
             raise EasyBuildError("Failed to parse %s with external modules metadata: %s", cfg, err)
 
-    known_metadata_keys = ['name', 'prefix', 'version']
+    known_metadata_keys = ['name', 'prefix', 'version', 'dep_tc_name', 'dep_tc_version']
     unknown_keys = {}
 
     # make sure name/version values are always lists, make sure they're equal length
