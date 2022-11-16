@@ -337,15 +337,21 @@ def get_toolchain_hierarchy(parent_toolchain, incl_capabilities=False):
         # consider both version and versionsuffix for dependencies
         cands = []
         for dep in parsed_ec['ec'].dependencies():
-            # skip dependencies that are marked as external modules
+            # use metadata of dependencies that are marked as external modules
             if dep['external_module']:
-                continue
-
-            # include dep and toolchain of dep as candidates
-            cands.extend([
-                {'name': dep['name'], 'version': dep['version'] + dep['versionsuffix']},
-                dep['toolchain'],
-            ])
+                dep['name'] = dep['external_module_metadata']['name'][0]
+                dep['version'] = dep['external_module_metadata']['version'][0]
+                dep['toolchain'] = {'name': dep['external_module_metadata']['dep_tc_name'], 'version': dep['external_module_metadata']['dep_tc_version']}
+                cands.extend([
+                    {'name': dep['name'], 'version': dep['version']},
+                    dep['toolchain'],
+                ])
+            else:
+                # include dep and toolchain of dep as candidates
+                cands.extend([
+                    {'name': dep['name'], 'version': dep['version'] + dep['versionsuffix']},
+                    dep['toolchain'],
+                ])
 
             # find easyconfig file for this dep and parse it
             ecfile = robot_find_easyconfig(dep['name'], det_full_ec_version(dep))
